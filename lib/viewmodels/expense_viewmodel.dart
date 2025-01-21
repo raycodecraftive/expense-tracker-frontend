@@ -19,8 +19,8 @@ class ExpenseViewmodel extends ChangeNotifier {
       _isLoading = true;
 
       await Future.delayed(const Duration(seconds: 1));
-      var resposne =
-          await ApiService.get(url: "http://localhost:3000/expenses");
+      var resposne = await ApiService.sendRequest(
+          url: "http://localhost:3000/expenses", method: HttpMethod.GET);
       if (resposne != null) {
         List<Expense> expenses = [];
         List arrayOfData = (resposne['data']);
@@ -63,8 +63,10 @@ class ExpenseViewmodel extends ChangeNotifier {
       category: category,
     );
     // send the data to an api
-    var response = await ApiService.post(
-        url: "http://localhost:3000/expenses", body: expense.toMap());
+    var response = await ApiService.sendRequest(
+        method: HttpMethod.POST,
+        url: "http://localhost:3000/expenses",
+        body: expense.toMap());
 
     getExpenses();
 
@@ -83,8 +85,10 @@ class ExpenseViewmodel extends ChangeNotifier {
     //
     Expense expense = _expensedata.firstWhere((expense) => expense.id == e.id);
 
-    await ApiService.update(
-        url: "http://localhost:3000/expenses/${e.id}", body: e.toMap());
+    await ApiService.sendRequest(
+        method: HttpMethod.PUT,
+        url: "http://localhost:3000/expenses/${e.id}",
+        body: e.toMap());
 
     /// updating the expense locally
     expense.title = e.title;
@@ -102,7 +106,8 @@ class ExpenseViewmodel extends ChangeNotifier {
       Expense expense = _expensedata.firstWhere((expense) => expense.id == id);
 
       // Send a DELETE request to the API
-      var response = await ApiService.delete(
+      var response = await ApiService.sendRequest(
+        method: HttpMethod.DELETE,
         url: "http://localhost:3000/expenses/$id",
         body: {},
       );

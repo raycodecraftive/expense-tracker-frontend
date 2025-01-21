@@ -1,98 +1,79 @@
 import 'dart:convert';
-import 'dart:developer';
+import 'dart:io';
 
+import 'package:expense_tracker_frontend1/services/storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
+
+enum HttpMethod { GET, POST, PUT, DELETE }
+
+enum APIErrorType {
+  unauthorized,
+  badRequest,
+  notFound,
+  serverError,
+  noConnection,
+  unknownError
+}
+
+class ApiError {
+  final String? message;
+  final APIErrorType errorType;
+
+  ApiError({
+    required this.message,
+    this.errorType = APIErrorType.unknownError,
+  });
+}
 
 class ApiService {
-  static Future<Map<String, dynamic>?> update({
+  static Future<Map<String, dynamic>> sendRequest({
+    required HttpMethod method,
     required String url,
-    required Map<String, dynamic> body,
+    Map<String, dynamic>? body,
   }) async {
     try {
       Uri uri = Uri.parse(url);
-      log(body.toString());
-      Response data = await http.put(uri,
-          headers: {"Content-Type": "application/json"},
-          body: json.encode(body));
-    } catch (e) {
-      return null;
-    }
-    return null;
-  }
+      var request = http.Request(method.name, uri);
 
-  static Future<Map<String, dynamic>?> delete({
-    required String url,
-    required Map<String, dynamic> body,
-  }) async {
-    try {
-      Uri uri = Uri.parse(url);
-      log(body.toString());
-      Response data = await http.delete(uri,
-          headers: {"Content-Type": "application/json"},
-          body: json.encode(body));
-      return jsonDecode(data.body);
-    } catch (e) {
-      return null;
-    }
-  }
+      // set headers
+      request.headers['Content-Type'] = 'application/json';
+      String? token = await SecureStorageHelper().read("token");
 
-  static Future<Map<String, dynamic>?> post({
-    required String url,
-    required Map<String, dynamic> body,
-  }) async {
-    try {
-      Uri uri = Uri.parse(url);
-      log(body.toString());
-      Response data = await http.post(
-        uri,
-        headers: {
-          "Content-Type": "application/json"
-        }, // Always set content type as JSON
-
-        body: json.encode(body),
-      );
-      var convertedData = jsonDecode(data.body);
-
-      if (data.statusCode == 200 || data.statusCode == 201) {
-        if (convertedData is List) {
-          return {"data": convertedData};
-        }
-        return convertedData;
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
       }
-      throw Exception(convertedData['message'].toString());
+
+      if (body != null) {
+        request.body = jsonEncode(body);
+      }
+
+      http.StreamedResponse response = await request.send();
+      var rawData = await response.stream.bytesToString();
+      var data = jsonDecode(rawData);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (data is List) {
+          return {"data": data};
+        }
+        return data;
+      }
+      if (response.statusCode == 401) {
+        throw ApiError(
+          message: "Unauthorized",
+          errorType: APIErrorType.unauthorized,
+        );
+      }
+      throw ApiError(
+          message: data['message'].toString(),
+          errorType: APIErrorType.unknownError);
+    } on SocketException {
+      throw ApiError(
+        message: "No internet connection",
+        errorType: APIErrorType.noConnection,
+      );
     } catch (e) {
       rethrow;
     }
-  }
-
-  static Future<Map<String, dynamic>?> get({
-    required String url,
-  }) async {
-    try {
-      // api call
-
-      // parse the url
-      Uri uri = Uri.parse(url);
-
-      Response data = await http.get(uri);
-
-      //string body
-
-      // convert to map
-      var convertedData = jsonDecode(data.body);
-
-      if (convertedData is List) {
-        print("adp meka list ekak");
-        return {"data": convertedData};
-      }
-      return convertedData;
-    } catch (e) {
-      print(e);
-      return null;
-    }
-
-    // logic
   }
 }
 

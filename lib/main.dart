@@ -50,49 +50,59 @@ class WelcomeScreen extends StatefulWidget {
 class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => checkSession());
-    super.initState();
-  }
-
-  void checkSession() async {
-    // Check if the user is logged in
-
-    bool isLoggedIn = false;
-    var storage = const FlutterSecureStorage();
-    String? token = await storage.read(key: 'token');
     context.read<ProfileViewmodel>().getProfile();
-
-    isLoggedIn = true;
-
-    // If the user is logged in, navigate to the HomeScreen
-
-    if (isLoggedIn) {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => const HomeScreen()));
-    } else {
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => const Login()));
-    }
-
-    // If the user is not logged in, navigate to the LoginScreen
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-          child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CupertinoActivityIndicator(
-            radius: 10,
-            color: Colors.black,
-          ),
-          SizedBox(height: 10),
-          Text("Checking Your Session...")
-        ],
-      )),
+    return Scaffold(
+      body: Consumer<ProfileViewmodel>(
+        builder: (context, viewModel, _) {
+          if (viewModel.isLoading) {
+            return Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CupertinoActivityIndicator(
+                    radius: 10,
+                    color: Colors.black,
+                  ),
+                  SizedBox(height: 10),
+                  Text("Checking Your Session...")
+                ],
+              ),
+            );
+          }
+
+          if (viewModel.isError) {
+            return Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text("An Error Occurred"),
+                  TextButton(
+                    onPressed: () {
+                      context.read<ProfileViewmodel>().getProfile();
+                    },
+                    child: Text("Retry"),
+                  )
+                ],
+              ),
+            );
+          }
+          if (viewModel.currentuser != null) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          }
+
+          return SizedBox();
+        },
+      ),
     );
   }
 }

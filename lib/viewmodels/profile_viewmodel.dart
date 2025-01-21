@@ -1,3 +1,4 @@
+import 'package:expense_tracker_frontend1/constants/endpoints.dart';
 import 'package:expense_tracker_frontend1/models/user/user.dart';
 import 'package:expense_tracker_frontend1/services/api.dart';
 import 'package:flutter/cupertino.dart';
@@ -17,21 +18,35 @@ class ProfileViewmodel extends ChangeNotifier {
 
   Future<bool> getProfile() async {
     try {
-      var response = await ApiService.get(url: "http://localhost:8000/profile");
-      print(response);
       _isLoading = true;
       _isError = false;
       _errorMessage = "";
+
+      var response = await ApiService.sendRequest(
+        method: HttpMethod.GET,
+        url: Endpoints.getProfile,
+      );
+      print(response);
+
+      _isError = false;
+      _isLoading = false;
       notifyListeners();
       return true;
-    } catch (e) {
-      print(e);
+    } on ApiError catch (err) {
       _isError = true;
-      _isLoading = false;
-      _errorMessage = e.toString();
+      _errorMessage = err.message!;
       notifyListeners();
 
       return false;
+    } catch (e) {
+      _isError = true;
+      _errorMessage = e.toString();
+      notifyListeners();
+
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 }

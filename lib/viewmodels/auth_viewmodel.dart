@@ -1,4 +1,3 @@
-
 import 'package:expense_tracker_frontend1/services/api.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -24,11 +23,13 @@ class AuthViewmodel extends ChangeNotifier {
       notifyListeners();
 
       await Future.delayed(const Duration(seconds: 2));
-      var response =
-          await ApiService.post(url: "http://localhost:8000/auth/login", body: {
-        "email": email,
-        "password": password,
-      });
+      var response = await ApiService.sendRequest(
+          url: "http://localhost:8000/auth/login",
+          method: HttpMethod.POST,
+          body: {
+            "email": email,
+            "password": password,
+          });
 
       String? token = (response?['access_token']);
 
